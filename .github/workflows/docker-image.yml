@@ -18,11 +18,31 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Git Semantic Version
+      uses: paulhatch/semantic-version@v4.0.2
+      with:
+        major_pattern: "major:"
+        minir_pattern: "feature:"
+        format: "${major}.${minor}.${patch}-prerelease${increment}"
+      id: gsv
+
     - name: Docker login
       env:
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
-        echo "Iniciando login"
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-        echo "Fin del login"
+
+    - name: Build Docker Image
+      env:
+        NEW_VERSION: ${{ steps.gsv.outputs.version }}
+      run: |
+        docker build -t sayuminx/docker-graphql:$NEW_VERSION .
+        docker build -t sayuminx/docker-graphql:latest .
+
+    - name: Push Docker Image
+      env:
+        NEW_VERSION: ${{ steps.gsv.outputs.version }}
+      run: |
+        docker push sayuminx/docker-graphql:$NEW_VERSION
+        docker push sayuminx/docker-graphql:latest
